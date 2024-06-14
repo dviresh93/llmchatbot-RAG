@@ -1,5 +1,4 @@
 # Import necessary libraries
-import databutton as db
 import streamlit as st
 import openai
 from brain import get_index_for_pdf
@@ -10,24 +9,20 @@ import os
 # Set the title for the Streamlit app
 st.title("RAG enhanced Chatbot")
 
-# Set up the OpenAI API key from databutton secrets
-os.environ["OPENAI_API_KEY"] = db.secrets.get("OPENAI_API_KEY")
-openai.api_key = db.secrets.get("OPENAI_API_KEY")
 
 
 # Cached function to create a vectordb for the provided PDF files
-@st.cache_data
+@st.cache_resource
 def create_vectordb(files, filenames):
     # Show a spinner while creating the vectordb
-    with st.spinner("Vector database"):
+    with st.spinner("Creating vector database..."):
         vectordb = get_index_for_pdf(
             [file.getvalue() for file in files], filenames, openai.api_key
         )
     return vectordb
 
-
 # Upload PDF files using Streamlit's file uploader
-pdf_files = st.file_uploader("", type="pdf", accept_multiple_files=True)
+pdf_files = st.file_uploader("Upload PDF files", type="pdf", accept_multiple_files=True)
 
 # If PDF files are uploaded, create the vectordb and store it in the session state
 if pdf_files:
@@ -74,7 +69,6 @@ if question:
 
     # Search the vectordb for similar content to the user's question
     search_results = vectordb.similarity_search(question, k=3)
-    # search_results
     pdf_extract = "/n ".join([result.page_content for result in search_results])
 
     # Update the prompt with the pdf extract
@@ -105,10 +99,6 @@ if question:
             botmsg.write(result)
 
     # Add the assistant's response to the prompt
-    prompt.append({"role": "assistant", "content": result})
-
-    # Store the updated prompt in the session state
-    st.session_state["prompt"] = prompt
     prompt.append({"role": "assistant", "content": result})
 
     # Store the updated prompt in the session state
